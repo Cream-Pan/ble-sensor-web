@@ -63,10 +63,12 @@ document.getElementById('downloadButton').addEventListener('click', () => {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    
-    link.setAttribute("href", url);
-    link.setAttribute("download", "sensor_data.csv");
+
+    link.href = url;
+    link.download = "sensor_data.csv";
     document.body.appendChild(link);
-    link.click();
+    link.click();  // または link.dispatchEvent(new MouseEvent("click"));
     document.body.removeChild(link);
 });
+
+
