@@ -46,4 +46,32 @@ document.getElementById('connectButton').addEventListener('click', async () => {
         console.error("エラーが発生しました: ", error);
         alert("接続に失敗しました。コンソールを確認してください。");
     }
+
+});
+
+// CSVダウンロードボタンのクリックイベント
+document.getElementById('downloadButton').addEventListener('click', () => {
+    if (receivedData.length === 0) {
+        alert("ダウンロードするデータがありません。");
+        return;
+    }
+
+    // CSVヘッダー
+    let csvContent = "BPM,Avg_BPM,Time\n";
+
+    // データをCSV形式の文字列に変換
+    receivedData.forEach(item => {
+        csvContent += `${item.bpm},${item.beatAvg},${item.currentTime}\n`;
+    });
+
+    // Blobを作成し、ダウンロードリンクを生成
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", "sensor_data.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 });
