@@ -4,6 +4,7 @@ const CHARACTERISTIC_UUID = "abcdef01-1234-5678-1234-56789abcdef0";
 const DEVICE_NAME = "MAX30105 Sensor";
 
 let device;
+let receivedData = [];
 
 document.getElementById('connectButton').addEventListener('click', async () => {
     try {
@@ -75,3 +76,4 @@ document.getElementById('downloadButton').addEventListener('click', () => {
     link.click();
     document.body.removeChild(link);
 });
+
