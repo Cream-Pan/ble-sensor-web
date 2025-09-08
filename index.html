@@ -9,11 +9,15 @@
     <button id="connectButton">BLEデバイスに接続</button>
     <button id="downloadButton">CSVダウンロード</button>
     <div id="dataDisplay">
+        <h2>MAX30102 (心拍数)</h2>
         <p>BPM: <span id="bpmValue">-</span></p>
         <p>平均BPM: <span id="avgBpmValue">-</span></p>
         <p>経過時間: <span id="timeValue">-</span></p>
+        <br>
+        <h2>MLX90632 (温度)</h2>
+        <p>周囲温度: <span id="ambientTempValue">-</span> °C</p>
+        <p>物体温度: <span id="objectTempValue">-</span> °C</p>
     </div>
     <script src="app.js"></script>
 </body>
-
 </html>
