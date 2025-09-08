@@ -47,36 +47,41 @@ async function connectToDevice(device, serviceUUID, characteristicUUID) {
     characteristic.addEventListener('characteristicvaluechanged', (event) => {
         const value = event.target.value;
         const deviceName = device.name;
+        const timestamp = new Date().toISOString();
 
-        if (deviceName === MAX_DEVICE_NAME) {
-            if (value.byteLength === 12) {
-                const bpm = value.getFloat32(0, true);
-                const beatAvg = value.getInt32(4, true);
-                const currentTime = value.getUint32(8, true);
-                
-                receivedData.push({
-                    bpm: bpm,
-                    beatAvg: beatAvg,
-                    currentTime: currentTime
-                });
+        if (deviceName === MAX_DEVICE_NAME && value.byteLength === 12) {
+            const bpm = value.getFloat32(0, true);
+            const beatAvg = value.getInt32(4, true);
+            const currentTime = value.getUint32(8, true);
 
-                document.getElementById('bpmValue').textContent = bpm.toFixed(2);
-                document.getElementById('avgBpmValue').textContent = beatAvg;
-                document.getElementById('timeValue').textContent = (currentTime / 1000).toFixed(2);
-            }
-        } else if (deviceName === MLX_DEVICE_NAME) {
-            if (value.byteLength === 8) {
-                const ambientTemp = value.getFloat32(0, true);
-                const objectTemp = value.getFloat32(4, true);
+            receivedData.push({
+                timestamp,
+                bpm,
+                beatAvg,
+                currentTime,
+                ambientTemp: '',
+                objectTemp: ''
+            });
 
-                receivedData.push({
-                    ambientTemp: ambientTemp,
-                    objectTemp: objectTemp
-                });
+            document.getElementById('bpmValue').textContent = bpm.toFixed(2);
+            document.getElementById('avgBpmValue').textContent = beatAvg;
+            document.getElementById('timeValue').textContent = (currentTime / 1000).toFixed(2);
+        } 
+        else if (deviceName === MLX_DEVICE_NAME && value.byteLength === 8) {
+            const ambientTemp = value.getFloat32(0, true);
+            const objectTemp = value.getFloat32(4, true);
 
-                document.getElementById('ambientTempValue').textContent = ambientTemp.toFixed(2);
-                document.getElementById('objectTempValue').textContent = objectTemp.toFixed(2);
-            }
+            receivedData.push({
+                timestamp,
+                bpm: '',
+                beatAvg: '',
+                currentTime: '',
+                ambientTemp,
+                objectTemp
+            });
+
+            document.getElementById('ambientTempValue').textContent = ambientTemp.toFixed(2);
+            document.getElementById('objectTempValue').textContent = objectTemp.toFixed(2);
         }
     });
 }
@@ -88,10 +93,9 @@ document.getElementById('downloadButton').addEventListener('click', () => {
     }
 
     // CSVヘッダーを修正して両方のセンサーデータを含める
-    let csvContent = "BPM,Avg_BPM,Time,Ambient_Temp,Object_Temp\n";
+    let csvContent = "Timestamp,BPM,Avg_BPM,Time(ms),Ambient_Temp,Object_Temp\n";
     receivedData.forEach(item => {
-        // データが存在しない場合は空欄で出力
-        csvContent += `${item.bpm || ''},${item.beatAvg || ''},${item.currentTime || ''},${item.ambientTemp || ''},${item.objectTemp || ''}\n`;
+        csvContent += `${item.timestamp},${item.bpm || ''},${item.beatAvg || ''},${item.currentTime || ''},${item.ambientTemp || ''},${item.objectTemp || ''}\n`;
     });
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
