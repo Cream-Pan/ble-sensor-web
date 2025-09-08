@@ -1,36 +1,59 @@
-// BLEサービスとキャラクタリスティックのUUIDはArduinoスケッチと一致させる
-const SERVICE_UUID = "3a5197ff-07ce-499e-8d37-d3d457af549a";
-const CHARACTERISTIC_UUID = "abcdef01-1234-5678-1234-56789abcdef0";
-const DEVICE_NAME = "MAX30105 Sensor";
+// MAX30102用のUUID
+const MAX_SERVICE_UUID = "3a5197ff-07ce-499e-8d37-d3d457af549a";
+const MAX_CHARACTERISTIC_UUID = "abcdef01-1234-5678-1234-56789abcdef0";
+const MAX_DEVICE_NAME = "MAX30105 Sensor";
 
-let device;
-let receivedData = []; // ここは正しいです
+// MLX90632用のUUID
+const MLX_SERVICE_UUID = "4a5197ff-07ce-499e-8d37-d3d457af549a";
+const MLX_CHARACTERISTIC_UUID = "fedcba98-7654-3210-fedc-ba9876543210";
+const MLX_DEVICE_NAME = "MLX90632 Sensor";
+
+let maxDevice, mlxDevice;
+let receivedData = [];
 
 document.getElementById('connectButton').addEventListener('click', async () => {
     try {
         console.log('スキャン中...');
-        device = await navigator.bluetooth.requestDevice({
-            filters: [{ name: DEVICE_NAME }],
-            optionalServices: [SERVICE_UUID]
+
+        // MAX30102デバイスに接続
+        maxDevice = await navigator.bluetooth.requestDevice({
+            filters: [{ name: MAX_DEVICE_NAME }],
+            optionalServices: [MAX_SERVICE_UUID]
         });
+        await connectToDevice(maxDevice, MAX_SERVICE_UUID, MAX_CHARACTERISTIC_UUID);
 
-        console.log(`デバイス '${device.name}' に接続中...`);
-        const server = await device.gatt.connect();
-        const service = await server.getPrimaryService(SERVICE_UUID);
-        const characteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+        // MLX90632デバイスに接続
+        mlxDevice = await navigator.bluetooth.requestDevice({
+            filters: [{ name: MLX_DEVICE_NAME }],
+            optionalServices: [MLX_SERVICE_UUID]
+        });
+        await connectToDevice(mlxDevice, MLX_SERVICE_UUID, MLX_CHARACTERISTIC_UUID);
 
-        await characteristic.startNotifications();
-        console.log('通知を購読中...');
+    } catch (error) {
+        console.error("エラーが発生しました: ", error);
+        alert("接続に失敗しました。コンソールを確認してください。");
+    }
+});
 
-        characteristic.addEventListener('characteristicvaluechanged', (event) => {
-            const value = event.target.value;
-            
+async function connectToDevice(device, serviceUUID, characteristicUUID) {
+    console.log(`デバイス '${device.name}' に接続中...`);
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService(serviceUUID);
+    const characteristic = await service.getCharacteristic(characteristicUUID);
+
+    await characteristic.startNotifications();
+    console.log(`通知を購読中...`);
+
+    characteristic.addEventListener('characteristicvaluechanged', (event) => {
+        const value = event.target.value;
+        const deviceName = device.name;
+
+        if (deviceName === MAX_DEVICE_NAME) {
             if (value.byteLength === 12) {
                 const bpm = value.getFloat32(0, true);
                 const beatAvg = value.getInt32(4, true);
                 const currentTime = value.getUint32(8, true);
-
-                // ⭐ ここにデータを配列に保存する処理を追加します
+                
                 receivedData.push({
                     bpm: bpm,
                     beatAvg: beatAvg,
@@ -41,13 +64,22 @@ document.getElementById('connectButton').addEventListener('click', async () => {
                 document.getElementById('avgBpmValue').textContent = beatAvg;
                 document.getElementById('timeValue').textContent = (currentTime / 1000).toFixed(2);
             }
-        });
+        } else if (deviceName === MLX_DEVICE_NAME) {
+            if (value.byteLength === 8) {
+                const ambientTemp = value.getFloat32(0, true);
+                const objectTemp = value.getFloat32(4, true);
 
-    } catch (error) {
-        console.error("エラーが発生しました: ", error);
-        alert("接続に失敗しました。コンソールを確認してください。");
-    }
-});
+                receivedData.push({
+                    ambientTemp: ambientTemp,
+                    objectTemp: objectTemp
+                });
+
+                document.getElementById('ambientTempValue').textContent = ambientTemp.toFixed(2);
+                document.getElementById('objectTempValue').textContent = objectTemp.toFixed(2);
+            }
+        }
+    });
+}
 
 document.getElementById('downloadButton').addEventListener('click', () => {
     if (receivedData.length === 0) {
@@ -55,20 +87,19 @@ document.getElementById('downloadButton').addEventListener('click', () => {
         return;
     }
 
-    let csvContent = "BPM,Avg_BPM,Time\n";
+    // CSVヘッダーを修正して両方のセンサーデータを含める
+    let csvContent = "BPM,Avg_BPM,Time,Ambient_Temp,Object_Temp\n";
     receivedData.forEach(item => {
-        csvContent += `${item.bpm},${item.beatAvg},${item.currentTime}\n`;
+        // データが存在しない場合は空欄で出力
+        csvContent += `${item.bpm || ''},${item.beatAvg || ''},${item.currentTime || ''},${item.ambientTemp || ''},${item.objectTemp || ''}\n`;
     });
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-
     link.href = url;
     link.download = "sensor_data.csv";
     document.body.appendChild(link);
-    link.click();  // または link.dispatchEvent(new MouseEvent("click"));
+    link.click();
     document.body.removeChild(link);
 });
-
-
