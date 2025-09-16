@@ -1,7 +1,7 @@
 // MAX30102用のUUID
 const MAX_SERVICE_UUID = "3a5197ff-07ce-499e-8d37-d3d457af549a";
 const MAX_CHARACTERISTIC_UUID = "abcdef01-1234-5678-1234-56789abcdef0";
-const MAX_DEVICE_NAME = "MAX30105 Sensor";
+const MAX_DEVICE_NAME = "MAX30102 Sensor";
 
 // MLX90632用のUUID
 const MLX_SERVICE_UUID = "4a5197ff-07ce-499e-8d37-d3d457af549a";
@@ -107,3 +107,4 @@ document.getElementById('downloadButton').addEventListener('click', () => {
     link.click();
     document.body.removeChild(link);
 });
+
