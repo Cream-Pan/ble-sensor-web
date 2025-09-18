@@ -100,7 +100,7 @@ const MAX = {
     MAX.chart.update("none");
 
     MAX.receivedData.push({ bpm, beatAvg, sensor_elapsed_ms:sensorElapsedMs, sensor_elapsed_s:sensorElapsedS,
-      measure_elapsed_s:measureElapsedS, recv_epoch_ms:recvEpochMs, recv_iso:new Date(recvEpochMs).toISOString() });
+      measure_elapsed_s:measureElapsedS, recv_epoch_ms:recvEpochMs, recv_jst: formatLocalTimeForCSV(recvEpochMs) });
   },
 
   handleFlagNotification:(event)=>{
@@ -177,7 +177,7 @@ const MLX = {
     MLX.chart.update("none");
 
     MLX.receivedData.push({ amb, obj, sensor_elapsed_ms:sensorElapsedMs, sensor_elapsed_s:sensorElapsedS,
-      measure_elapsed_s:measureElapsedS, recv_epoch_ms:recvEpochMs, recv_iso:new Date(recvEpochMs).toISOString() });
+      measure_elapsed_s:measureElapsedS, recv_epoch_ms:recvEpochMs, recv_jst: formatLocalTimeForCSV(recvEpochMs) });
   }
 };
 
@@ -349,7 +349,7 @@ downloadAllBtn.addEventListener("click", ()=>{
       SensorElapsed_s: r.sensor_elapsed_s,
       MeasureElapsed_s: r.measure_elapsed_s,
       RecvEpoch_ms: r.recv_epoch_ms,
-      RecvISO: r.recv_iso
+      RecvJST: r.recv_jst
     }));
     const wsMax = XLSX.utils.json_to_sheet(maxRows);
     XLSX.utils.book_append_sheet(wb, wsMax, "MAX30102");
@@ -366,7 +366,7 @@ downloadAllBtn.addEventListener("click", ()=>{
       SensorElapsed_s: r.sensor_elapsed_s,
       MeasureElapsed_s: r.measure_elapsed_s,
       RecvEpoch_ms: r.recv_epoch_ms,
-      RecvISO: r.recv_iso
+      Recvjst: r.recv_jst
     }));
     const wsMlx = XLSX.utils.json_to_sheet(mlxRows);
     XLSX.utils.book_append_sheet(wb, wsMlx, "MLX90632");
