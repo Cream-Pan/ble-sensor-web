@@ -1,23 +1,90 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>Web Bluetooth Sensor</title>
-</head>
-<body>
-    <h1>BLEセンサーデータ</h1>
-    <button id="connectButton">BLEデバイスに接続</button>
-    <button id="downloadButton">CSVダウンロード</button>
-    <div id="dataDisplay">
-        <h2>MAX30102 (心拍数)</h2>
-        <p>BPM: <span id="bpmValue">-</span></p>
-        <p>平均BPM: <span id="avgBpmValue">-</span></p>
-        <p>経過時間: <span id="timeValue">-</span></p>
-        <br>
-        <h2>MLX90632 (温度)</h2>
-        <p>周囲温度: <span id="ambientTempValue">-</span> °C</p>
-        <p>物体温度: <span id="objectTempValue">-</span> °C</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MAX & MLX 統合 BLE ビューア</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- XLSX作成用（複数シート対応） -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <style>
+      .grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+      @media (min-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
+      .panel { border: 1px solid #ddd; border-radius: 10px; padding: 12px; background:#fff; }
+      .panel h2 { margin-top: 0; }
+      .section-title { color:#46a15f; }
+      .tiny-muted { font-size: .9em; opacity: .8; }
+      canvas { max-height: 360px; }
+      .toolbar { display:flex; gap:8px; flex-wrap:wrap; margin: 0 0 16px 0; }
+      .toolbar button { padding: 0.6em 1em; border: none; border-radius: 6px; background-color: #46a15f; color: #fff; font-size: 1em; cursor: pointer; }
+      .toolbar button:disabled { opacity: 0.5; cursor: not-allowed; }
+      .toolbar button:hover { background-color: #005fa3; }
+    </style>
+  </head>
+  <body>
+    <h1>MAX／MLX センサ統合ビューア</h1>
+    <p class="tiny-muted">Arduino側コードは変更不要．デバイス名とサービスUUIDに基づいて接続します．</p>
+
+    <!-- 統一コントロール -->
+    <div class="toolbar">
+      <button id="measure-all" disabled>計測開始</button>
+      <button id="download-all" disabled>一括ダウンロード（Excel）</button>
     </div>
+
+    <div class="grid">
+      <!-- MAX パネル -->
+      <section class="panel" id="max-panel">
+        <h2 class="section-title">MAX センサデータ</h2>
+        <div class="controls">
+          <button id="max-connect">BLEデバイスに接続</button>
+          <button id="max-disconnect" disabled>接続解除</button>
+        </div>
+
+        <div id="max-statusDisplay">
+          <div class="row">接続状態: <span id="max-status">未接続</span></div>
+          <div class="row">デバイス名: <span id="max-deviceName">-</span></div>
+        </div>
+
+        <div id="max-dataDisplay">
+          <div class="row">BPM: <span id="max-bpmValue">-</span></div>
+          <div class="row">平均BPM: <span id="max-avgBpmValue">-</span></div>
+          <div class="row">経過時間(計測): <span id="max-timeValue">-</span> s</div>
+          <div class="row">受信時刻(クライアント): <span id="max-recvTimeValue">-</span></div>
+          <div class="row">距離状態: <span id="max-distanceStatus">-</span></div>
+        </div>
+
+        <div id="max-chartContainer">
+          <canvas id="max-realtimeChart"></canvas>
+        </div>
+      </section>
+
+      <!-- MLX パネル -->
+      <section class="panel" id="mlx-panel">
+        <h2 class="section-title">MLX センサデータ</h2>
+        <div class="controls">
+          <button id="mlx-connect">BLEデバイスに接続</button>
+          <button id="mlx-disconnect" disabled>接続解除</button>
+        </div>
+
+        <div id="mlx-statusDisplay">
+          <div class="row">接続状態: <span id="mlx-status">未接続</span></div>
+          <div class="row">デバイス名: <span id="mlx-deviceName">-</span></div>
+        </div>
+
+        <div id="mlx-dataDisplay">
+          <div class="row">Ambient (°C): <span id="mlx-ambValue" class="val">-</span></div>
+          <div class="row">Object (°C): <span id="mlx-objValue" class="val">-</span></div>
+          <div class="row">経過時間(計測): <span id="mlx-timeValue" class="val">-</span> s</div>
+          <div class="row">受信時刻(クライアント): <span id="mlx-recvTimeValue" class="val">-</span></div>
+        </div>
+
+        <div id="mlx-chartContainer">
+          <canvas id="mlx-realtimeChart"></canvas>
+        </div>
+      </section>
+    </div>
+
     <script src="app.js"></script>
-</body>
+  </body>
 </html>
