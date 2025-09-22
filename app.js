@@ -4,12 +4,12 @@
 const MAX_SERVICE_UUID = "3a5197ff-07ce-499e-8d37-d3d457af549a";
 const MAX_CHARACTERISTIC_UUID = "abcdef01-1234-5678-1234-56789abcdef0";
 const MAX_FLAG_CHARACTERISTIC_UUID = "abcdef01-1234-5678-1234-56789abcdef1";
-const MAX_DEVICE_NAME = "MAX30102 Sensor";
+const MAX_DEVICE_NAME = "MAX R";
 
 // ===== MLX90632 側定数 =====
 const MLX_SERVICE_UUID = "4a5197ff-07ce-499e-8d37-d3d457af549a";
 const MLX_CHARACTERISTIC_UUID = "fedcba98-7654-3210-fedc-ba9876543210";
-const MLX_DEVICE_NAME = "MLX90632 Sensor";
+const MLX_DEVICE_NAME = "MLX R";
 
 // 共通ユーティリティ
 function pad(n, w = 2) { return String(n).padStart(w, "0"); }
@@ -380,3 +380,4 @@ downloadAllBtn.addEventListener("click", ()=>{
 
 // 初期化
 updateUnifiedButtons();
+
