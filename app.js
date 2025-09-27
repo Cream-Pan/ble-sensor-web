@@ -54,9 +54,6 @@ const MAX = {
   measureStartEpochMs:null, 
   receivedData:[], rawReceivedData:[], chart:null, bpmBuffer:[], RATE_SIZE:4,
   connected:false,
-  // ★追加: チャート更新用のスロットル設定
-  lastChartUpdateMs: 0, 
-  CHART_UPDATE_INTERVAL_MS: 50, // 50ms (20FPS) に制限
   els:{
     connect: document.getElementById("max-connect"),
     disconnect: document.getElementById("max-disconnect"),
@@ -75,7 +72,6 @@ const MAX = {
     if(this.chart){ this.chart.data.labels=[]; this.chart.data.datasets[0].data=[]; this.chart.data.datasets[1].data=[]; this.chart.update(); }
     this.els.bpm.textContent="-"; this.els.avg.textContent="-"; this.els.time.textContent="-"; this.els.recv.textContent="-"; this.els.distance.textContent="-";
     this.measureStartEpochMs = null;
-    this.lastChartUpdateMs = 0; // ★リセット
   },
 
   handleNotification: (event)=>{
@@ -96,20 +92,15 @@ const MAX = {
     MAX.els.time.textContent = measureElapsedS.toFixed(2);
     MAX.els.recv.textContent = formatLocalTimeWithMs(recvEpochMs);
 
-    // ★改善2: グラフ更新をスロットルする
-    const now = Date.now();
-    if(now - MAX.lastChartUpdateMs >= MAX.CHART_UPDATE_INTERVAL_MS) {
-        MAX.ensureChart();
-        const maxPts=50;
-        // グラフ用データ配列の更新も、更新時のみに限定
-        MAX.chart.data.labels.push(measureElapsedS.toFixed(1));
-        MAX.chart.data.datasets[0].data.push(bpm);
-        MAX.chart.data.datasets[1].data.push(beatAvg);
-        if(MAX.chart.data.labels.length>maxPts){ MAX.chart.data.labels.shift(); MAX.chart.data.datasets[0].data.shift(); MAX.chart.data.datasets[1].data.shift(); }
-        MAX.chart.update("none");
-        MAX.lastChartUpdateMs = now;
-    }
-
+    MAX.ensureChart();
+    const maxPts=50;
+    // グラフ用データ配列の更新も、更新時のみに限定
+    MAX.chart.data.labels.push(measureElapsedS.toFixed(1));
+    MAX.chart.data.datasets[0].data.push(bpm);
+    MAX.chart.data.datasets[1].data.push(beatAvg);
+    if(MAX.chart.data.labels.length>maxPts){ MAX.chart.data.labels.shift(); MAX.chart.data.datasets[0].data.shift(); MAX.chart.data.datasets[1].data.shift(); }
+    MAX.chart.update("none");
+    
     // データロギングは毎回実行
     MAX.receivedData.push({ bpm, beatAvg, sensor_elapsed_ms:sensorElapsedMs, sensor_elapsed_s:sensorElapsedS,
       measure_elapsed_s:measureElapsedS, recv_epoch_ms:recvEpochMs, recv_jst: formatLocalTimeForCSV(recvEpochMs) });
@@ -145,9 +136,7 @@ const MAX = {
 // ====== MLX 名前空間 ======
 const MLX = {
   device:null, service:null, characteristic:null,
-  measureStartEpochMs:null, receivedData:[], chart:null, intervalId:null, 
-  // ★削除: latestSampleは不要になるため削除
-  // latestSample:null,
+  measureStartEpochMs:null, receivedData:[], chart:null, 
   connected:false,
   els:{
     connect: document.getElementById("mlx-connect"),
@@ -180,13 +169,8 @@ const MLX = {
     if(this.chart){ this.chart.data.labels=[]; this.chart.data.datasets[0].data=[]; this.chart.data.datasets[1].data=[]; this.chart.update(); }
     this.els.amb.textContent="-"; this.els.obj.textContent="-"; this.els.time.textContent="-"; this.els.recv.textContent="-";
     this.measureStartEpochMs = null; 
-    // ★削除: latestSampleは不要になるため削除
-    // this.latestSample=null;
-    // ★削除: intervalIdは不要になるため削除
-    // this.intervalId=null;
   },
 
-  // ★改善1: リアルタイム処理に移行（processLatestSampleのロジックを統合）
   handleNotification:(event)=>{
     const v=event.target.value; if(v.byteLength!==16) return;
     const recvEpochMs=Date.now();
@@ -221,9 +205,6 @@ const MLX = {
     MLX.receivedData.push({ amb, obj, rawAmbient, rawObject, sensor_elapsed_ms:sensorElapsedMs, sensor_elapsed_s:sensorElapsedS,
       measure_elapsed_s:measureElapsedS, recv_epoch_ms:recvEpochMs, recv_jst: formatLocalTimeForCSV(recvEpochMs) });
   },
-
-  // ★削除: processLatestSample は不要
-  // processLatestSample(){ ... } 
 };
 
 // ====== 統一ボタンと状態管理 ======
@@ -296,8 +277,6 @@ MLX.els.connect.addEventListener("click", async ()=>{
 
     MLX.device.addEventListener("gattserverdisconnected", ()=>{
       try{ MLX.characteristic?.removeEventListener("characteristicvaluechanged", MLX.handleNotification);}catch{}
-      // ★削除: intervalId関連の処理は不要
-      // if(MLX.intervalId){ clearInterval(MLX.intervalId); MLX.intervalId=null; }
       MLX.connected=false; MLX.els.status.textContent="未接続"; MLX.els.deviceName.textContent="-";
       MLX.els.connect.disabled=false; MLX.els.disconnect.disabled=true;
       if(measuring) stopMeasurementAll();
@@ -339,15 +318,11 @@ async function startMeasurementAll(){
   await MAX.characteristic.startNotifications();
   await MAX.rawCharacteristic.startNotifications();
   MAX.measureStartEpochMs = Date.now();
-  MAX.lastChartUpdateMs = 0; // ★初期化
 
   // MLX開始
   try{ MLX.resetView(); MLX.characteristic.removeEventListener("characteristicvaluechanged", MLX.handleNotification);}catch{}
   MLX.characteristic.addEventListener("characteristicvaluechanged", MLX.handleNotification);
   await MLX.characteristic.startNotifications();
-  // ★削除: setIntervalによるポーリングは不要
-  // MLX.measureStartEpochMs = Date.now();
-  // MLX.intervalId = setInterval(MLX.processLatestSample, 1000);
 
   measuring = true;
   updateUnifiedButtons();
@@ -365,8 +340,6 @@ async function stopMeasurementAll(){
   // MLX停止
   try{ await MLX.characteristic.stopNotifications(); }catch{}
   try{ MLX.characteristic.removeEventListener("characteristicvaluechanged", MLX.handleNotification);}catch{}
-  // ★削除: clearIntervalは不要
-  // if(MLX.intervalId){ clearInterval(MLX.intervalId); MLX.intervalId=null; }
   MLX.measureStartEpochMs = null;
 
   measuring = false;
